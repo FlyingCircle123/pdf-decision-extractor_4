@@ -1,0 +1,39 @@
+# Secrets
+.secrets.toml
+*.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+.venv/
+.python-version
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp files
+*.tmp
+*.temp
+temp_*.py
+
+# Audio files
+*.mp3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local test files
+test_*.pdf
+*.pdf
+!examples/*.pdf
