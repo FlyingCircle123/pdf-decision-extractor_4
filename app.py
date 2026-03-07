@@ -350,6 +350,299 @@ def call_ai(prompt, client, retries=3, delay=2):
             response = client.chat.completions.create(
                 model=MODEL,
                 messages=[{"role":"user","content":prompt}],
+                temperature=0.7 if mode in ["Demons", "Sarcastic", "Pirate", "Conspiracy","Motivational", "Angry", "Haiku"] else 0.3 ,
+                max_tokens=1000
+            )
+            content = response.choices[0].message.content.strip()
+            if content.startswith("```json"):
+                content = content.replace("```json","").replace("```","").strip()
+            elif content.startswith("```"):
+                content = content.replace("```","").strip()
+            return json.loads(content)
+        except json.JSONDecodeError:
+            return {
+                "decisions": [],
+                "action_items": [],
+                "key_points": [{"text": f"Raw: {content[:200]}", "page": 0, "locator": "raw"}]
+            }
+        except Exception as e:
+            if attempt < retries-1:
+                time.sleep(delay * (2 ** attempt))
+                continue
+            return {
+                "decisions": [],
+                "action_items": [],
+                "key_points": [{"text": f"Error: {str(e)}", "page": 0, "locator": "error"}]
+            }
+
+def merge_results(results):
+    merged = {"decisions": [], "action_items": [], "key_points": []}
+    for r in results:
+        if isinstance(r, dict):
+            for k in merged.keys():
+                if k in r and isinstance(r[k], list):
+                    merged[k].extend(r[k])
+    
+    # Deduplicate based on text
+    for k in merged.keys():
+        seen = set()
+        unique = []
+        for item in merged[k]:
+            if isinstance(item, dict) and item.get("text") not in seen:
+                seen.add(item["text"])
+                unique.append(item)
+        merged[k] = unique
+    return merged
+
+def process_document(chunks, client, mode, force_reprocess=False):
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    # Cache check
+    cache_key = f"{st.session_state.last_pdf_hash}_{mode}"
+    if not force_reprocess and cache_key in st.session_state.text_cache:
+        status_text.text("Loading results from cache...")
+        return st.session_state.text_cache[cache_key]
+    
+    chunk_results = []
+    for i, chunk in enumerate(chunks):
+        status_text.text(f"Processing chunk {i+1}/{len(chunks)} ({mode} mode)...")
+        prompt = build_prompt(chunk, mode)
+        result = call_ai(prompt, client, mode)  # add mode parameter
+        chunk_results.append(result)
+        progress_bar.progress((i+1)/len(chunks))
+    
+    final_result = merge_results(chunk_results)
+    
+    # Cache with mode
+    if st.session_state.last_pdf_hash:
+        st.session_state.text_cache[cache_key] = final_result
+    
+    status_text.text("Merging results...")
+    return final_result
+
+# =========================
+# JPG → PDF CONVERTER
+# =========================
+def images_to_pdf(image_files):
+    images = []
+    for img in image_files:
+        image = Image.open(img)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        images.append(image)
+    
+    if images:
+        img_buffer = BytesIO()
+        images[0].save(img_buffer, format='PDF', save_all=True, append_images=images[1:])
+        img_buffer.seek(0)
+        return img_buffer
+    return None
+
+# =========================
+# WORD CLOUD GENERATOR
+# =========================
+def generate_wordcloud(text):
+    if not text or len(text.strip()) < 50:
+        return None
+    try:
+        wordcloud = WordCloud(width=800, height=400, background_color='black').generate(text)
+        fig, ax = plt.subplots()
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis('off')
+        return fig
+    except:
+        return None
+
+# =========================
+# AUDIO SUMMARY
+# =========================
+def text_to_speech(text):
+    if not text or len(text.strip()) < 20:
+        return None
+    try:
+        tts = gTTS(text=text[:500], lang='en', slow=False)
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp:
+            tts.save(tmp.name)
+            temp_files.append(tmp.name)
+            return tmp.name
+    except:
+        return None
+
+# =========================
+# UI RENDERING
+# =========================
+def render_output(result):
+    st.markdown("## 📋 Extracted Decisions")
+    
+    # Extract all text for word cloud
+    all_text = ""
+    for cat in ["decisions", "action_items", "key_points"]:
+        for item in result.get(cat, []):
+            if isinstance(item, dict):
+                all_text += item.get("text", "") + " "
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 🎯 Decisions")
+        if result.get("decisions"):
+            for d in result["decisions"]:
+                if isinstance(d, dict):
+                    st.markdown(f"- {d['text']}  \n  *Page {d['page']}*")
+        else:
+            st.markdown("*No decisions found*")
+        
+        st.markdown("### ⚡ Action Items")
+        if result.get("action_items"):
+            for a in result["action_items"]:
+                if isinstance(a, dict):
+                    st.markdown(f"- {a['text']}  \n  *Page {a['page']}*")
+        else:
+            st.markdown("*No action items found*")
+    
+    with col2:
+        st.markdown("### 💡 Key Points")
+        if result.get("key_points"):
+            for k in result["key_points"]:
+                if isinstance(k, dict):
+                    st.markdown(f"- {k['text']}  \n  *Page {k['page']}*")
+        else:
+            st.markdown("*No key points found*")
+        
+        st.markdown("### ☁️ Word Cloud")
+        if all_text and len(all_text) > 100:
+            with st.spinner("Generating word cloud..."):
+                fig = generate_wordcloud(all_text)
+                if fig:
+                    st.pyplot(fig)
+        else:
+            st.markdown("*Not enough text for word cloud*")
+        
+        # Audio summary
+        if all_text and len(all_text) > 100:
+            if st.button("🔊 Generate Audio Summary"):
+                with st.spinner("Creating audio..."):
+                    audio_file = text_to_speech(all_text)
+                    if audio_file:
+                        with open(audio_file, 'rb') as f:
+                            st.audio(f.read(), format='audio/mp3')
+    
+    # Downloads
+    col3, col4 = st.columns(2)
+    with col3:
+        st.download_button(
+            label="📥 Download JSON",
+            data=json.dumps(result, indent=2),
+            file_name="extracted_decisions.json",
+            mime="application/json"
+        )
+    with col4:
+        output_csv = StringIO()
+        writer = csv.writer(output_csv)
+        writer.writerow(["Category", "Text", "Page", "Locator"])
+        for cat in ["decisions", "action_items", "key_points"]:
+            for item in result.get(cat, []):
+                if isinstance(item, dict):
+                    writer.writerow([cat, item.get("text", ""), item.get("page", ""), item.get("locator", "")])
+        st.download_button(
+            label="📥 Download CSV",
+            data=output_csv.getvalue(),
+            file_name="extracted_decisions.csv",
+            mime="text/csv"
+        )
+
+# =========================
+# API KEY HANDLER
+# =========================
+def get_api_key():
+    try:
+        return st.secrets["OPENAI_API_KEY"]
+    except:
+        return os.getenv("OPENAI_API_KEY", "")
+
+# =========================
+# MAIN APP
+# =========================
+def main():
+    st.title("🦆 WHITE CROW — PDF Tool")
+    st.markdown("Extract decisions, actions, and insights from any PDF. With weird modes.")
+    
+    # Inject CSS themes
+    inject_theme_css()
+    
+    api_key = get_api_key()
+    
+    # Sidebar
+    with st.sidebar:
+        st.markdown("### ⚙️ Settings")
+        
+        # API Key
+        if not api_key:
+            api_key = st.text_input("OpenAI API Key", type="password")
+        else:
+            st.success("✅ API key loaded")
+        
+        st.markdown("---")
+        
+        # Theme controls (fixed: checkbox instead of toggle)
+        st.markdown("### 🎨 Appearance")
+        st.session_state.dark_mode = st.checkbox("Dark Mode", value=st.session_state.dark_mode)
+        st.session_state.theme = st.selectbox("Accent Theme", ["Dark", "Forest", "Cyber", "Demon"])
+        
+        st.markdown("---")
+        
+        # Mode selector
+        st.markdown("### 🎭 Vibe Mode")
+        mode = st.selectbox(
+            "Choose extraction style",
+            ["Normal", "Demons", "ELI5", "Haiku", "Sarcastic", "Pirate", "Conspiracy", "Motivational"]
+        )
+        
+        st.markdown("---")
+        st.markdown("**Tips:**")
+        st.markdown("- Scanned PDFs use OCR")
+        st.markdown("- Large files may take time")
+        st.markdown("- Same PDF loads instantly (cached)")
+    
+    # Main tabs
+    tab1, tab2, tab3 = st.tabs(["📄 PDF Extractor", "🖼️ JPG → PDF", "📜 History"])
+    
+    with tab1:
+        uploaded_file = st.file_upABSOLUTE LEGEND, UNSTOPPABLE
+        - Write like a fitness influencer: "Listen up, CHAMP!"
+        - Turn every point into a pep talk
+        - End with "YOU GOT THIS!" energy
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Angry": f"""
+        [CLENCHING FIST EMOJI] THIS TEXT IS INFURIATING.
+        
+        RULES:
+        - Sound genuinely annoyed at having to read this
+        - Complain about obvious points: "Oh wow, water is wet, thanks..."
+        - Use ALL CAPS for things that are stupid
+        - Add "UGH." and "SERIOUSLY?!" randomly
+        - Be passive-aggressive: "Apparently we have to state the obvious..."
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """
+    }
+    
+    return mode_prefixes.get(mode, mode_prefixes["Normal"])
+
+def call_ai(prompt, client, retries=3, delay=2):
+    for attempt in range(retries):
+        try:
+            response = client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role":"user","content":prompt}],
                 temperature=0.3 if "Haiku" not in prompt else 0.7,
                 max_tokens=1000
             )
