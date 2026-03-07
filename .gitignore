@@ -37,3 +37,6 @@ temp_*.py
 test_*.pdf
 *.pdf
 !examples/*.pdf
+*.mp3
+*.tmp
+.env
