@@ -187,11 +187,8 @@ def build_prompt(chunk_dict, mode="Normal"):
     page = chunk_dict["page"]
     locator = chunk_dict["locator"]
     
-    base_prompt = f"""
-    Extract all key decisions, action items, and important points from this text.
-    
-    Text: [PAGE {page}] {locator}...\n{chunk}
-    
+    # Base structure (always required)
+    base_json_structure = f"""
     Return ONLY valid JSON with this exact structure:
     {{
         "decisions": [
@@ -212,18 +209,140 @@ def build_prompt(chunk_dict, mode="Normal"):
     - Return ONLY the JSON
     """
     
+    # ===== EXTREME MODE PROMPTS =====
     mode_prefixes = {
-        "Demons": "You are a dark occult scribe. Make the extraction sound spooky and ritualistic. Use eerie language.\n\n",
-        "ELI5": "Explain like I'm 5 years old. Use simple words, no jargon. Make it easy for a child to understand.\n\n",
-        "Haiku": "Convert each key point into a haiku (5-7-5 syllable pattern). Be poetic and concise.\n\n",
-        "Sarcastic": "Be heavily sarcastic. Roll your eyes at the text. Mock it subtly while extracting facts.\n\n",
-        "Pirate": "Arr, matey! Talk like a pirate. Use pirate lingo: arr, matey, booty, sea shanties.\n\n",
-        "Conspiracy": "Everything is connected. Make it sound like a conspiracy theory. Use phrases like 'they don't want you to know'.\n\n",
-        "Motivational": "Tony Stark energy. Make it sound inspiring, like a motivational speech. Hype up the reader.\n\n",
-        "Normal": ""
+        "Normal": f"""
+        Extract all key decisions, action items, and important points from this text.
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Demons": f"""
+        You are a demon from the abyss revealing forbidden knowledge. 
+        The text contains dark secrets that must be told with dread and power.
+        
+        Speak in ominous, ritualistic tones. Use phrases like:
+        - "Ancient truth reveals..."
+        - "They fear this knowledge..."
+        - "Beware the hidden meaning..."
+        - "The shadows whisper..."
+        
+        Make every extraction feel like a curse or prophecy.
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "ELI5": f"""
+        Explain this like I'm 5 years old.
+        
+        RULES:
+        - Only use words a child would know (no big words)
+        - Short sentences (max 8 words each)
+        - Be playful and curious
+        - If the concept is complex, use a simple metaphor
+        - Imagine you're talking to a kid who asks "why?" after everything
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Haiku": f"""
+        Transform every key point into a traditional haiku.
+        
+        RULES:
+        - EXACTLY 5-7-5 syllable pattern per point
+        - Must capture the essence poetically
+        - No exceptions — count syllables carefully
+        - If a point can't be a haiku, rephrase until it fits
+        - Be beautiful, concise, and deep
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Sarcastic": f"""
+        Extract with MAXIMUM sarcasm and eye-roll energy.
+        
+        RULES:
+        - Add "Oh wow, how surprising..." before important points
+        - Use air quotes mentally: "they claim that..."
+        - Mock obvious statements: "Groundbreaking discovery: ..."
+        - Be passively aggressive: "Apparently, according to 'experts'..."
+        - Roll your eyes through the whole extraction
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Pirate": f"""
+        ARR, MATEY! TALK LIKE A PIRATE OR WALK THE PLANK!
+        
+        RULES:
+        - Start every point with "Arr," or "Shiver me timbers,"
+        - Replace verbs with pirate slang (find → plunder, read → scour)
+        - Use: booty, treasure, sea, crew, captain, Davy Jones
+        - Add "Yarr" and "Avast" frequently
+        - Make it sound like a pirate's log
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Conspiracy": f"""
+        WAKE UP, SHEEPLE. Nothing is what it seems.
+        
+        RULES:
+        - Everything is connected to a hidden agenda
+        - Add "They don't want you to know this but..." before each point
+        - Use: cover-up, truth hidden, government secrets, "they" (vague)
+        - Imply that every fact is suppressed information
+        - Sound paranoid but convincing: "Coincidence? I think not."
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Motivational": f"""
+        LET'S GOOO! This text is FUEL for greatness!
+        
+        RULES:
+        - Exclamation marks EVERYWHERE!
+        - Use hype language: CRUSH IT, ABSOLUTE LEGEND, UNSTOPPABLE
+        - Write like a fitness influencer: "Listen up, CHAMP!"
+        - Turn every point into a pep talk
+        - End with "YOU GOT THIS!" energy
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """,
+        
+        "Angry": f"""
+        [CLENCHING FIST EMOJI] THIS TEXT IS INFURIATING.
+        
+        RULES:
+        - Sound genuinely annoyed at having to read this
+        - Complain about obvious points: "Oh wow, water is wet, thanks..."
+        - Use ALL CAPS for things that are stupid
+        - Add "UGH." and "SERIOUSLY?!" randomly
+        - Be passive-aggressive: "Apparently we have to state the obvious..."
+        
+        Text: [PAGE {page}] {locator}...\n{chunk}
+        
+        {base_json_structure}
+        """
     }
     
-    return mode_prefixes.get(mode, "") + base_prompt
+    return mode_prefixes.get(mode, mode_prefixes["Normal"])
 
 def call_ai(prompt, client, retries=3, delay=2):
     for attempt in range(retries):
