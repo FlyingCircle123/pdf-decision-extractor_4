@@ -623,7 +623,7 @@ def render_output(result):
             data=json_str,
             file_name="extracted_decisions.json",
             mime="application/json",
-            key="json_download"
+            key="download_json_1"
         )
     
     with col4:
@@ -646,7 +646,7 @@ def render_output(result):
             data=output_csv.getvalue(),
             file_name="extracted_decisions.csv",
             mime="text/csv",
-            key="csv_download"
+            key="download_csv_2"
         )
 
 # =========================
