@@ -1,3 +1,4 @@
+#pylint:disable= 'inconsistent use of tabs and spaces in indentation (app, line 678)'
 # =========================
 # IMPORTS
 # =========================
@@ -105,8 +106,10 @@ def get_file_hash(file_bytes):
     return hashlib.md5(file_bytes).hexdigest()
 
 def file_size_mb(file_bytes):
-    """Convert bytes to MB"""
-    return len(file_bytes) / (1024*1024)
+    """Convert bytes to MB - works with both bytes and file positions"""
+    if isinstance(file_bytes, int):  # If we passed a position integer
+        return file_bytes / (1024*1024)
+    return len(file_bytes) / (1024*1024)  # If we passed actual bytes
 
 def get_api_key():
     """Get OpenAI API key from secrets or environment"""
@@ -613,6 +616,7 @@ def render_output(result):
             mime="text/csv",
             key="csv_download"
         )
+
 # =========================
 # MAIN APP
 # =========================
@@ -672,10 +676,11 @@ def main():
         uploaded_file = st.file_uploader("Choose a PDF", type="pdf", key="pdf_uploader")
         
         if uploaded_file is not None:
-            # Check file size
-            uploaded_file.seek(0, 2)  # Seek to end
-            size_mb = file_size_mb(uploaded_file.tell())
-            uploaded_file.seek(0)  # Reset position
+            # Check file size properly
+            uploaded_file.seek(0, 2)  # Go to end
+            file_size = uploaded_file.tell()  # Get size in bytes
+            uploaded_file.seek(0)  # Back to start
+            size_mb = file_size / (1024*1024)  # Convert to MB
             
             if size_mb > MAX_FILE_SIZE_MB:
                 st.warning(f"⚠️ File is {size_mb:.1f}MB — may be slow")
