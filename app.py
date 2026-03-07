@@ -27,8 +27,20 @@ import atexit
 st.set_page_config(page_title="WHITE CROW - PDF Tool", layout="wide", page_icon="🦆")
 CHUNK_SIZE = 1000
 OVERLAP_SIZE = 200
-MODEL = "gpt-3.5-turbo"
 MAX_FILE_SIZE_MB = 50
+
+# Model configuration
+MODELS = {
+    "Normal": "gpt-3.5-turbo",      # $0.50/1M tokens
+    "Sarcastic": "gpt-3.5-turbo",    # Works fine with cheap model
+    "Angry": "gpt-3.5-turbo",        # Works fine with cheap model
+    "ELI5": "gpt-4o-mini",           # Needs better understanding ($0.15/1M)
+    "Haiku": "gpt-4o-mini",           # Needs creativity ($0.15/1M)
+    "Demons": "gpt-4o-mini",          # Needs dark creativity ($0.15/1M)  
+    "Pirate": "gpt-4o-mini",          # Needs language play ($0.15/1M)
+    "Conspiracy": "gpt-4o-mini",      # Needs pattern matching ($0.15/1M)
+    "Motivational": "gpt-4o-mini"     # Needs hype ($0.15/1M)
+}
 # =========================
 # SESSION STATE INIT
 # =========================
@@ -173,17 +185,22 @@ def chunk_page_texts(pages, chunk_size=CHUNK_SIZE, overlap=OVERLAP_SIZE):
                     "locator": chunk_text[:50] + "..."
                 })
     return chunks
-# =========================
-# AI ENGINE - CORE FUNCTIONS
-# =========================
-def call_ai(prompt, client, retries=3, delay=2):
-    """Call OpenAI API with retry logic"""
+def call_ai(prompt, client, mode="Normal", retries=3, delay=2):
+    """Call OpenAI API with retry logic - uses different models per mode"""
+    
+    # Get the right model for this mode
+    model = MODELS.get(mode, "gpt-3.5-turbo")
+    
+    # Set temperature based on creativity needed
+    creative_modes = ["Demons", "Pirate", "Conspiracy", "Motivational", "Haiku", "Sarcastic", "Angry"]
+    temperature = 0.7 if mode in creative_modes else 0.3
+    
     for attempt in range(retries):
         try:
             response = client.chat.completions.create(
-                model=MODEL,
+                model=model,  # Dynamic model per mode!
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
+                temperature=temperature,
                 max_tokens=1000
             )
             content = response.choices[0].message.content.strip()
@@ -197,7 +214,6 @@ def call_ai(prompt, client, retries=3, delay=2):
             return json.loads(content)
             
         except json.JSONDecodeError:
-            # Return raw content if JSON parsing fails
             return {
                 "decisions": [],
                 "action_items": [],
@@ -212,7 +228,6 @@ def call_ai(prompt, client, retries=3, delay=2):
                 "action_items": [],
                 "key_points": [{"text": f"Error: {str(e)}", "page": 0, "locator": "error"}]
             }
-
 def merge_results(results):
     """Merge and deduplicate results from multiple chunks"""
     merged = {"decisions": [], "action_items": [], "key_points": []}
@@ -401,12 +416,29 @@ def build_prompt(chunk_dict, mode="Normal"):
     
     return mode_prefixes.get(mode, mode_prefixes["Normal"])
 # =========================
-# AI ENGINE - PROCESSING
+# AI ENGINE - PROCESSING (FIXED WITH MODEL SWITCHING)
 # =========================
 def process_document(chunks, client, mode, force_reprocess=False):
-    """Process all chunks through AI"""
+    """Process all chunks through AI with mode-specific models"""
     progress_bar = st.progress(0)
     status_text = st.empty()
+    
+    # Model configuration
+    models = {
+        "Normal": "gpt-3.5-turbo",
+        "Sarcastic": "gpt-3.5-turbo",
+        "Angry": "gpt-3.5-turbo",
+        "ELI5": "gpt-4o-mini",
+        "Haiku": "gpt-4o-mini",
+        "Demons": "gpt-4o-mini",
+        "Pirate": "gpt-4o-mini",
+        "Conspiracy": "gpt-4o-mini",
+        "Motivational": "gpt-4o-mini"
+    }
+    
+    # Show which model is being used
+    model_used = models.get(mode, "gpt-3.5-turbo")
+    st.info(f"🤖 Using {model_used} for {mode} mode")
     
     # Check cache
     cache_key = f"{st.session_state.last_pdf_hash}_{mode}"
@@ -417,8 +449,8 @@ def process_document(chunks, client, mode, force_reprocess=False):
     chunk_results = []
     for i, chunk in enumerate(chunks):
         status_text.text(f"Processing chunk {i+1}/{len(chunks)} ({mode} mode)...")
-        prompt = build_prompt(chunk, mode)  # Using YOUR function
-        result = call_ai(prompt, client)
+        prompt = build_prompt(chunk, mode)
+        result = call_ai(prompt, client, mode)  # Pass mode for model selection
         chunk_results.append(result)
         progress_bar.progress((i+1)/len(chunks))
     
