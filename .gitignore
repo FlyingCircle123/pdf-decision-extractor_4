@@ -43,3 +43,6 @@ test_*.pdf
 *.mp3
 *.tmp
 .env
+*.mp3
+*.tmp
+.env
