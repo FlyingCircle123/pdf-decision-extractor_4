@@ -673,7 +673,17 @@ def render_output(result):
 def main():
     st.title("🦆 WHITE CROW — PDF Tool")
     st.markdown("Extract decisions, actions, and insights from any PDF. With weird modes.")
-
+    st.html("""
+<style>
+[data-testid='stFileDropzoneInstructions']::after {
+    content: "Límite 1MB por archivo" !important;
+    display: block;
+}
+[data-testid='stFileDropzoneInstructions'] > span {
+    display: none;
+}
+</style>
+""")
     inject_theme_css()
     api_key = get_api_key()
 
