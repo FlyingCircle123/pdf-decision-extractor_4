@@ -33,7 +33,13 @@ st.set_page_config(page_title="WHITE CROW - PDF Tool", layout="wide", page_icon=
 CHUNK_SIZE = 1000
 OVERLAP_SIZE = 200
 MAX_FILE_SIZE_MB = 50
+# =========================
+# FREE TIER LIMITS
+# =========================
+if "pdf_count" not in st.session_state:
+    st.session_state.pdf_count = 0
 
+MAX_FREE_PDFS = 5  # Change this number anytime
 MODELS = {
     "Normal": "gpt-3.5-turbo",
     "Spooky Tales": "gpt-4-turbo-preview",
@@ -764,7 +770,19 @@ def main():
         st.markdown("- Scanned PDFs use OCR")
         st.markdown("- Large files may take time")
         st.markdown("- Same PDF loads instantly (cached)")
-        st.markdown("- Click buttons to generate word cloud/audio")
+        st.markdown("---")
+        st.markdown("### ☕ Support WHITE CROW")
+        st.markdown("""
+Built in 3 days for $0.98 because I was tired of paywalls.
+
+**9 weird modes** because normal is boring.
+
+Free for **5 PDFs** — after that, consider supporting:
+
+[👉 **Buy me a coffee on Ko-fi**](YOUR_KO_FI_LINK)
+
+*Every coffee keeps the crows flying! 🦆*
+""")
 
     tab1, tab2, tab3 = st.tabs(["📄 PDF Extractor", "🖼️ JPG → PDF", "📜 History"])
 
