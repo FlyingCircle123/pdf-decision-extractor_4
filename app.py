@@ -664,30 +664,35 @@ def render_output(result):
                         st.audio(f.read(), format="audio/mp3")
 
     # Downloads
-    col3, col4 = st.columns(2)
-    with col3:
-        st.download_button(
-            label="📥 Download JSON",
-            data=json.dumps(result, indent=2),
-            file_name="extracted_decisions.json",
-            mime="application/json",
-            key=f"json_{hash(json.dumps(result))}"
-        )
-    with col4:
-        output_csv = StringIO()
-        writer = csv.writer(output_csv)
-        writer.writerow(["Category", "Text", "Page", "Locator"])
-        for cat in ["decisions", "action_items", "key_points"]:
-            for item in result.get(cat, []):
-                if isinstance(item, dict):
-                    writer.writerow([cat, item.get("text", ""), item.get("page", ""), item.get("locator", "")])
-        st.download_button(
-            label="📥 Download CSV",
-            data=output_csv.getvalue(),
-            file_name="extracted_decisions.csv",
-            mime="text/csv",
-            key=f"csv_{hash(output_csv.getvalue())}"
-        )
+col3, col4 = st.columns(2)
+with col3:
+    import uuid
+    json_key = f"json_{uuid.uuid4().hex}_{st.session_state.history_counter}"
+    st.download_button(
+        label="📥 Download JSON",
+        data=json.dumps(result, indent=2),
+        file_name="extracted_decisions.json",
+        mime="application/json",
+        key=json_key
+    )
+
+with col4:
+    output_csv = StringIO()
+    writer = csv.writer(output_csv)
+    writer.writerow(["Category", "Text", "Page", "Locator"])
+    for cat in ["decisions", "action_items", "key_points"]:
+        for item in result.get(cat, []):
+            if isinstance(item, dict):
+                writer.writerow([cat, item.get("text", ""), item.get("page", ""), item.get("locator", "")])
+    
+    csv_key = f"csv_{uuid.uuid4().hex}_{st.session_state.history_counter}"
+    st.download_button(
+        label="📥 Download CSV",
+        data=output_csv.getvalue(),
+        file_name="extracted_decisions.csv",
+        mime="text/csv",
+        key=csv_key
+    )
 
 # =========================
 # MAIN APP
