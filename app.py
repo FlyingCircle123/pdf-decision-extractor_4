@@ -600,10 +600,14 @@ def text_to_speech(text):
 # UI RENDERING
 # =========================
 def render_output(result):
-    # Increment counter for each history item
-    if "history_counter" not in st.session_state:
-    	st.session_state.history_counter = 0
-    st.session_state.history_counter += 1
+    # Increment counter for each call
+    if "render_counter" not in st.session_state:
+        st.session_state.render_counter = 0
+    st.session_state.render_counter += 1
+    
+    # Base key for this render
+    base_key = f"render_{st.session_state.render_counter}_{time.time_ns()}"
+    
     st.markdown("## 📋 Extracted Decisions")
     
     # Extract all text for word cloud
@@ -647,52 +651,46 @@ def render_output(result):
                 fig = generate_wordcloud(all_text)
                 if fig:
                     st.pyplot(fig)
-                    plt.close(fig)  # Close figure to free memory
+                    plt.close(fig)
         else:
             st.markdown("*Not enough text for word cloud*")
         
-# Audio summary
-    if all_text and len(all_text) > 100:
-        import uuid
-        audio_key = f"audio_{uuid.uuid4().hex}"
-
-        if st.button("🔊 Generate Audio Summary", key=audio_key):
-            with st.spinner("Creating audio..."):
-                audio_file = text_to_speech(all_text)
-                if audio_file:
-                    with open(audio_file, "rb") as f:
-                        st.audio(f.read(), format="audio/mp3")
-
-    # Downloads
-col3, col4 = st.columns(2)
-with col3:
-    import uuid
-    json_key = f"json_{uuid.uuid4().hex}_{st.session_state.history_counter}"
-    st.download_button(
-        label="📥 Download JSON",
-        data=json.dumps(result, indent=2),
-        file_name="extracted_decisions.json",
-        mime="application/json",
-        key=json_key
-    )
-
-with col4:
-    output_csv = StringIO()
-    writer = csv.writer(output_csv)
-    writer.writerow(["Category", "Text", "Page", "Locator"])
-    for cat in ["decisions", "action_items", "key_points"]:
-        for item in result.get(cat, []):
-            if isinstance(item, dict):
-                writer.writerow([cat, item.get("text", ""), item.get("page", ""), item.get("locator", "")])
+        # Audio summary
+        if all_text and len(all_text) > 100:
+            if st.button("🔊 Generate Audio Summary", key=f"audio_{base_key}"):
+                with st.spinner("Creating audio..."):
+                    audio_file = text_to_speech(all_text)
+                    if audio_file:
+                        with open(audio_file, "rb") as f:
+                            st.audio(f.read(), format="audio/mp3")
     
-    csv_key = f"csv_{uuid.uuid4().hex}_{st.session_state.history_counter}"
-    st.download_button(
-        label="📥 Download CSV",
-        data=output_csv.getvalue(),
-        file_name="extracted_decisions.csv",
-        mime="text/csv",
-        key=csv_key
-    )
+    # Downloads
+    col3, col4 = st.columns(2)
+    with col3:
+        st.download_button(
+            label="📥 Download JSON",
+            data=json.dumps(result, indent=2),
+            file_name="extracted_decisions.json",
+            mime="application/json",
+            key=f"json_{base_key}"
+        )
+    
+    with col4:
+        output_csv = StringIO()
+        writer = csv.writer(output_csv)
+        writer.writerow(["Category", "Text", "Page", "Locator"])
+        for cat in ["decisions", "action_items", "key_points"]:
+            for item in result.get(cat, []):
+                if isinstance(item, dict):
+                    writer.writerow([cat, item.get("text", ""), item.get("page", ""), item.get("locator", "")])
+        
+        st.download_button(
+            label="📥 Download CSV",
+            data=output_csv.getvalue(),
+            file_name="extracted_decisions.csv",
+            mime="text/csv",
+            key=f"csv_{base_key}"
+        )
 
 # =========================
 # MAIN APP
