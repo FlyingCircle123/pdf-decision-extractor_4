@@ -21,7 +21,7 @@ import csv
 from io import StringIO, BytesIO
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-from gtts import gTTS
+
 import tempfile
 import atexit
 
@@ -360,7 +360,7 @@ Text to analyze:
 """,
 
         "Pirate": f"""
-ARR, MATEY! TALK LIKE A PIRATE OR WALK THE PLANK!
+ARR, MATEY! TALK LIKE A PIRATE !
 
 RULES:
 - Start every point with "Arr," or "Shiver me timbers,"
@@ -407,7 +407,7 @@ Text to analyze:
 {base_json_structure}
 """,
 
-        "Angry": f"""
+        "Annoyed": f"""
 [CLENCHING FIST EMOJI] THIS TEXT IS INFURIATING.
 
 RULES:
@@ -432,7 +432,7 @@ def call_ai(prompt, client, mode="Normal", retries=3, delay=2):
 
     creative_modes = [
         "Demons", "Pirate", "Conspiracy", "Motivational",
-        "Haiku", "Sarcastic", "Angry"
+        "Haiku", "Sarcastic", "Annoyed"
     ]
     temperature = 0.7 if mode in creative_modes else 0.3
 
@@ -581,31 +581,6 @@ def images_to_pdf(image_files):
                 pass
 
 # =========================
-# AUDIO SUMMARY
-# =========================
-def text_to_speech_openai(text, client):
-    """Guaranteed to work - uses OpenAI's TTS"""
-    if not text or len(text.strip()) < 20:
-        return None
-    
-    try:
-        # Trim to first 1000 chars (more than enough for preview)
-        text = text[:1000]
-        
-        response = client.audio.speech.create(
-            model="tts-1",
-            voice="nova",  # Options: alloy, echo, fable, onyx, nova, shimmer
-            input=text
-        )
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp:
-            response.stream_to_file(tmp.name)
-            temp_files.append(tmp.name)
-            return tmp.name
-            
-    except Exception as e:
-        st.error(f"OpenAI TTS failed: {str(e)}")
-        return None
 
 # =========================
 # UI RENDERING
@@ -666,14 +641,6 @@ def render_output(result):
         else:
             st.markdown("*Not enough text for word cloud*")
         
-        # Audio summary
-        if all_text and len(all_text) > 100:
-            if st.button("🔊 Generate Audio Summary", key=f"audio_{base_key}"):
-                with st.spinner("Creating audio..."):
-                    audio_file = text_to_speech(all_text)
-                    if audio_file:
-                        with open(audio_file, "rb") as f:
-                            st.audio(f.read(), format="audio/mp3")
     
     # Downloads
     col3, col4 = st.columns(2)
