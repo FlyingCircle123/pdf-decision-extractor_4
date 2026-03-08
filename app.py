@@ -651,14 +651,18 @@ def render_output(result):
         else:
             st.markdown("*Not enough text for word cloud*")
         
-        # Audio summary
-        if all_text and len(all_text) > 100:
-            if st.button("🔊 Generate Audio Summary", key=f"audio_{hash(all_text)}_{st.session_state.get('history_counter', 0)}"):
-                with st.spinner("Creating audio..."):
-                    audio_file = text_to_speech(all_text)
-                    if audio_file:
-                        with open(audio_file, 'rb') as f:
-                            st.audio(f.read(), format='audio/mp3')
+# Audio summary - use a truly unique key
+	if all_text and len(all_text) > 100:
+    # Create a unique key using timestamp + random
+    	unique_key = f"audio_{hash(all_text)}_{st.session_state.get('audio_counter', 0)}_{os.urandom(4).hex()}"
+    	if st.button("🔊 Generate Audio Summary", key=unique_key):
+        with st.spinner("Creating audio..."):
+            audio_file = text_to_speech(all_text)
+            if audio_file:
+                with open(audio_file, 'rb') as f:
+                    st.audio(f.read(), format='audio/mp3')
+    # Increment counter for next time
+    st.session_state.audio_counter = st.session_state.get('audio_counter', 0) + 1
     
     # Downloads
     col3, col4 = st.columns(2)
