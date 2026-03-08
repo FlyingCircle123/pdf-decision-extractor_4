@@ -36,14 +36,14 @@ MAX_FILE_SIZE_MB = 50
 
 MODELS = {
     "Normal": "gpt-3.5-turbo",
-    "Demons": "gpt-4-turbo-preview",
+    "Spooky Tales": "gpt-4-turbo-preview",
     "ELI5": "gpt-3.5-turbo",
     "Haiku": "gpt-4-turbo-preview",
-    "Sarcastic": "gpt-3.5-turbo",
-    "Pirate": "gpt-3.5-turbo",
-    "Conspiracy": "gpt-4-turbo-preview",
+    "Playful": "gpt-3.5-turbo",
+    "Adventurer": "gpt-3.5-turbo",
+    "Curious Mind": "gpt-4-turbo-preview",
     "Motivational": "gpt-3.5-turbo",
-    "Angry": "gpt-3.5-turbo",
+    "Passionate": "gpt-3.5-turbo",
 }
 
 # =========================
@@ -701,9 +701,9 @@ def main():
 
         st.markdown("### 🎭 Vibe Mode")
         mode = st.selectbox(
-            "Choose extraction style",
-            ["Normal", "Demons", "ELI5", "Haiku", "Sarcastic", "Pirate", "Conspiracy", "Motivational", "Angry"]
-        )
+        "Choose extraction style",
+        ["Normal", "Spooky Tales", "ELI5", "Haiku","Playful", "Adventurer", "Curious Mind", "Motivational", "Passionate"]
+)
 
         st.markdown("---")
         st.markdown("**Tips:**")
