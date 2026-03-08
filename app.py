@@ -600,6 +600,10 @@ def text_to_speech(text):
 # UI RENDERING
 # =========================
 def render_output(result):
+    # Increment counter for each history item
+    if "history_counter" not in st.session_state:
+    st.session_state.history_counter = 0
+st.session_state.history_counter += 1
     st.markdown("## 📋 Extracted Decisions")
     
     # Extract all text for word cloud
@@ -649,7 +653,7 @@ def render_output(result):
         
         # Audio summary
         if all_text and len(all_text) > 100:
-            if st.button("🔊 Generate Audio Summary", key=f"audio_{hash(all_text)}"):
+            if st.button("🔊 Generate Audio Summary", key=f"audio_{hash(all_text)}_{st.session_state.get('history_counter', 0)}"):
                 with st.spinner("Creating audio..."):
                     audio_file = text_to_speech(all_text)
                     if audio_file:
