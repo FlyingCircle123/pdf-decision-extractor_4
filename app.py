@@ -602,8 +602,8 @@ def text_to_speech(text):
 def render_output(result):
     # Increment counter for each history item
     if "history_counter" not in st.session_state:
-    st.session_state.history_counter = 0
-st.session_state.history_counter += 1
+    	st.session_state.history_counter = 0
+    	st.session_state.history_counter += 1
     st.markdown("## 📋 Extracted Decisions")
     
     # Extract all text for word cloud
