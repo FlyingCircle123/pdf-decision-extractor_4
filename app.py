@@ -770,20 +770,35 @@ def main():
 
     with tab1:
         uploaded_file = st.file_uploader("Choose a PDF", type="pdf", key="pdf_uploader")
-
-        if uploaded_file is not None:
-            if not validate_pdf(uploaded_file):
-                st.stop()
-
-            uploaded_file.seek(0, 2)
-            file_size = uploaded_file.tell()
-            uploaded_file.seek(0)
-            size_mb = file_size / (1024 * 1024)
-
-            if size_mb > MAX_FILE_SIZE_MB:
-                st.warning(f"⚠️ File is {size_mb:.1f}MB — may be slow")
-            else:
-                st.info(f"📄 File size: {size_mb:.1f}MB")
+    
+    # Show file size warning when no file is uploaded
+    if uploaded_file is None:
+        st.info("📄 **Note:** Max file size: 50MB (Streamlit shows 200MB but app enforces 50MB)")
+    
+    if uploaded_file is not None:
+        # Check file size immediately
+        uploaded_file.seek(0, 2)
+        file_size = uploaded_file.tell()
+        uploaded_file.seek(0)
+        
+        if file_size > MAX_FILE_SIZE_MB * 1024 * 1024:
+            st.error(f"❌ File too large! Max {MAX_FILE_SIZE_MB}MB")
+            st.stop()
+        
+        if not validate_pdf(uploaded_file):
+            st.stop()
+        
+        # Rest of your file processing...
+        uploaded_file.seek(0, 2)
+        size_mb = uploaded_file.tell() / (1024 * 1024)
+        uploaded_file.seek(0)
+        
+        if size_mb > MAX_FILE_SIZE_MB:
+            st.warning(f"⚠️ File is {size_mb:.1f}MB — may be slow")
+        else:
+            st.info(f"📄 File size: {size_mb:.1f}MB")
+        
+        # ... continue with hash, reprocess, etc.
 
             file_bytes = uploaded_file.read()
             uploaded_file.seek(0)
