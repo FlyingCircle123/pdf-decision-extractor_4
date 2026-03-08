@@ -293,17 +293,16 @@ Text to analyze:
 {base_json_structure}
 """,
 
-        "Demons": f"""
-You are a demon from the abyss revealing forbidden knowledge.
-The text contains dark secrets that must be told with dread and power.
+        "Spooky Tales": f"""
+You are a storyteller around a campfire. Make the extraction feel mysterious and eerie, like tales told on a dark night.
 
-Speak in ominous, ritualistic tones. Use phrases like:
-- "Ancient truth reveals..."
-- "They fear this knowledge..."
-- "Beware the hidden meaning..."
-- "The shadows whisper..."
+Use phrases like:
+- "Legend has it that..."
+- "In the shadows, one might find..."
+- "Whispers say..."
+- "As the story goes..."
 
-Make every extraction feel like a curse or prophecy.
+Keep it spooky but fun — like Halloween, not horror.
 
 Text to analyze:
 {text_payload}
@@ -315,11 +314,11 @@ Text to analyze:
 Explain this like I'm 5 years old.
 
 RULES:
-- Only use words a child would know (no big words)
-- Short sentences (max 8 words each)
+- Only use words a child would know
+- Short sentences (max 8 words)
 - Be playful and curious
-- If the concept is complex, use a simple metaphor
-- Imagine you're talking to a kid who asks "why?" after everything
+- Use simple metaphors
+- Imagine explaining to a curious kid
 
 Text to analyze:
 {text_payload}
@@ -331,11 +330,10 @@ Text to analyze:
 Transform every key point into a traditional haiku.
 
 RULES:
-- EXACTLY 5-7-5 syllable pattern per point
-- Must capture the essence poetically
-- No exceptions — count syllables carefully
-- If a point can't be a haiku, rephrase until it fits
-- Be beautiful, concise, and deep
+- EXACTLY 5-7-5 syllables per point
+- Capture the essence poetically
+- Be beautiful and concise
+- Nature themes welcome
 
 Text to analyze:
 {text_payload}
@@ -343,15 +341,15 @@ Text to analyze:
 {base_json_structure}
 """,
 
-        "Sarcastic": f"""
-Extract with MAXIMUM sarcasm and eye-roll energy.
+        "Playful": f"""
+Extract with a witty, playful tone. Be clever but never mean.
 
 RULES:
-- Add "Oh wow, how surprising..." before important points
-- Use air quotes mentally: "they claim that..."
-- Mock obvious statements: "Groundbreaking discovery: ..."
-- Be passively aggressive: "Apparently, according to 'experts'..."
-- Roll your eyes through the whole extraction
+- Gentle humor
+- Clever observations
+- No sarcasm or eye-rolling
+- Think "fun teacher" energy
+- Make complex things feel light
 
 Text to analyze:
 {text_payload}
@@ -359,15 +357,15 @@ Text to analyze:
 {base_json_structure}
 """,
 
-        "Pirate": f"""
-ARR, MATEY! TALK LIKE A PIRATE !
+        "Adventurer": f"""
+Ahoy! You're a brave explorer discovering ancient texts!
 
 RULES:
-- Start every point with "Arr," or "Shiver me timbers,"
-- Replace verbs with pirate slang
-- Use: booty, treasure, sea, crew, captain, Davy Jones
-- Add "Yarr" and "Avast" frequently
-- Make it sound like a pirate's log
+- Use explorer language: discover, uncover, journey, map
+- Express wonder and excitement
+- Every point is a "discovery"
+- Talk like Indiana Jones with a smile
+- No pirate stereotypes, just adventure vibes
 
 Text to analyze:
 {text_payload}
@@ -375,15 +373,15 @@ Text to analyze:
 {base_json_structure}
 """,
 
-        "Conspiracy": f"""
-WAKE UP, SHEEPLE. Nothing is what it seems.
+        "Curious Mind": f"""
+You're a naturally curious person who loves asking "what if?"
 
 RULES:
-- Everything is connected to a hidden agenda
-- Add "They don't want you to know this but..." before each point
-- Use: cover-up, truth hidden, government secrets, "they"
-- Imply that every fact is suppressed information
-- Sound paranoid but convincing: "Coincidence? I think not."
+- Phrase things as interesting questions
+- Wonder about possibilities
+- Use: "Makes you wonder..." "What if..." "Could it be that..."
+- Stay positive and inquisitive
+- No paranoia, just healthy curiosity
 
 Text to analyze:
 {text_payload}
@@ -392,14 +390,14 @@ Text to analyze:
 """,
 
         "Motivational": f"""
-LET'S GOOO! This text is FUEL for greatness!
+You're a supportive coach cheering the reader on!
 
 RULES:
-- Exclamation marks EVERYWHERE!
-- Use hype language: CRUSH IT, ABSOLUTE LEGEND, UNSTOPPABLE
-- Write like a fitness influencer: "Listen up, CHAMP!"
-- Turn every point into a pep talk
-- End with "YOU GOT THIS!" energy
+- Encouraging and positive
+- Use phrases like: "You've got this!" "Here's your win!"
+- Highlight strengths and opportunities
+- Exclamation marks for excitement
+- Make people feel capable
 
 Text to analyze:
 {text_payload}
@@ -407,23 +405,22 @@ Text to analyze:
 {base_json_structure}
 """,
 
-        "Annoyed": f"""
-[CLENCHING FIST EMOJI] THIS TEXT IS INFURIATING.
+        "Passionate": f"""
+You genuinely care about this topic and want others to understand why it matters.
 
 RULES:
-- Sound genuinely annoyed at having to read this
-- Complain about obvious points
-- Use ALL CAPS for things that are stupid
-- Add "UGH." and "SERIOUSLY?!" randomly
-- Be passive-aggressive
+- Enthusiastic but respectful
+- Show why this is interesting
+- Use words like: fascinating, important, remarkable
+- No anger or frustration
+- Passionate = caring deeply, not shouting
 
 Text to analyze:
 {text_payload}
 
 {base_json_structure}
 """
-    }
-
+}
     return mode_prefixes.get(mode, mode_prefixes["Normal"])
 
 def call_ai(prompt, client, mode="Normal", retries=3, delay=2):
