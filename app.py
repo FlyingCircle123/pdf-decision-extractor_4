@@ -132,17 +132,45 @@ def inject_theme_css():
     
     # Add file uploader CSS hack here
     st.markdown("""
-    <style>
-    [data-testid='stFileDropzoneInstructions'] span:first-of-type {
-        display: none !important;
-    }
-    [data-testid='stFileDropzoneInstructions']::before {
-        content: "Limit 50MB per file" !important;
-        font-weight: bold;
-        color: #FF4B4B;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+/* Hide ALL the default text */
+[data-testid='stFileDropzoneInstructions'] > span {
+    display: none !important;
+}
+
+[data-testid='stFileDropzoneInstructions'] div {
+    display: none !important;
+}
+
+[data-testid='stFileDropzoneInstructions'] small {
+    display: none !important;
+}
+
+/* Insert your custom text */
+[data-testid='stFileDropzoneInstructions']::before {
+    content: "📄 Drag & drop (Max 50MB)" !important;
+    display: block !important;
+    font-weight: bold !important;
+    color: #FF4B4B !important;
+    font-size: 1rem !important;
+    margin-bottom: 10px !important;
+}
+
+/* Also override the secondary text */
+[data-testid='stFileDropzoneInstructions']::after {
+    content: "PDF files only" !important;
+    display: block !important;
+    font-size: 0.9rem !important;
+    color: #888 !important;
+}
+
+/* Make sure the file uploader label is clear */
+[data-testid='stFileUploader'] label p {
+    font-size: 1.2rem !important;
+    font-weight: bold !important;
+}
+</style>
+""", unsafe_allow_html=True)
     
     # Accent colors based on theme...
     
