@@ -130,6 +130,22 @@ def inject_theme_css():
         """
         st.markdown(dark_css, unsafe_allow_html=True)
     
+    # Add file uploader CSS hack here
+    st.markdown("""
+    <style>
+    [data-testid='stFileDropzoneInstructions'] span:first-of-type {
+        display: none !important;
+    }
+    [data-testid='stFileDropzoneInstructions']::before {
+        content: "Limit 50MB per file" !important;
+        font-weight: bold;
+        color: #FF4B4B;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Accent colors based on theme...
+    
     # Accent colors based on theme
     accent_color = "#FF4B4B"  # default red
     if st.session_state.theme == "Forest":
