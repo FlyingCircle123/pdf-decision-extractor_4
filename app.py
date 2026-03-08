@@ -583,30 +583,41 @@ def images_to_pdf(image_files):
 # =========================
 # AUDIO SUMMARY
 # =========================
-def text_to_speech(text):
+def text_to_speech_openai(text, client):
+    """Guaranteed to work - uses OpenAI's TTS"""
     if not text or len(text.strip()) < 20:
         return None
+    
     try:
-        tts = gTTS(text=text[:500], lang='en', slow=False)
+        # Trim to first 1000 chars (more than enough for preview)
+        text = text[:1000]
+        
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice="nova",  # Options: alloy, echo, fable, onyx, nova, shimmer
+            input=text
+        )
+        
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp:
-            tts.save(tmp.name)
+            response.stream_to_file(tmp.name)
             temp_files.append(tmp.name)
             return tmp.name
+            
     except Exception as e:
-        st.warning(f"Audio generation failed: {e}")
+        st.error(f"OpenAI TTS failed: {str(e)}")
         return None
 
 # =========================
 # UI RENDERING
 # =========================
 def render_output(result):
-    # Increment counter for each call
-    if "render_counter" not in st.session_state:
-        st.session_state.render_counter = 0
-    st.session_state.render_counter += 1
+    # Increment counter for each history item
+    if "history_counter" not in st.session_state:
+        st.session_state.history_counter = 0
+    st.session_state.history_counter += 1
     
     # Base key for this render
-    base_key = f"render_{st.session_state.render_counter}_{time.time_ns()}"
+    base_key = f"render_{st.session_state.history_counter}_{time.time_ns()}"
     
     st.markdown("## 📋 Extracted Decisions")
     
