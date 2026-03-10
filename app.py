@@ -787,13 +787,18 @@ Free for **5 PDFs** — after that, consider supporting:
     tab1, tab2, tab3 = st.tabs(["📄 PDF Extractor", "🖼️ JPG → PDF", "📜 History"])
 
     with tab1:
-        uploaded_file = st.file_uploader("Choose a PDF", type="pdf", key="pdf_uploader")
+    	uploaded_file = st.file_uploader("Choose a PDF", type="pdf", key="pdf_uploader")
     
-    # Show file size warning when no file is uploaded
+    # Show file size hint when no file (this is fine here)
     if uploaded_file is None:
         st.info("📄 **Note:** Max file size: 50MB (Streamlit shows 200MB but app enforces 50MB)")
     
     if uploaded_file is not None:
+        # --- LIMIT CHECK (BEFORE ANY PROCESSING) ---
+        if st.session_state.pdf_count >= MAX_FREE_PDFS:
+            st.warning("⚠️ Free limit reached. Support on Ko-fi to continue: https://ko-fi.com/flyingcircle")
+            st.stop()
+        
         # Check file size immediately
         uploaded_file.seek(0, 2)
         file_size = uploaded_file.tell()
@@ -816,79 +821,80 @@ Free for **5 PDFs** — after that, consider supporting:
         else:
             st.info(f"📄 File size: {size_mb:.1f}MB")
         
-        # ... continue with hash, reprocess, etc.
+        file_bytes = uploaded_file.read()
+        uploaded_file.seek(0)
+        pdf_hash = get_file_hash(file_bytes)
+        st.session_state.last_pdf_hash = pdf_hash
 
-            file_bytes = uploaded_file.read()
-            uploaded_file.seek(0)
-            pdf_hash = get_file_hash(file_bytes)
-            st.session_state.last_pdf_hash = pdf_hash
+        reprocess = st.checkbox("🔄 Re-process (ignore cache)")
 
-            reprocess = st.checkbox("🔄 Re-process (ignore cache)")
+        # Display previous result if same file and mode
+        if (st.session_state.current_result is not None and 
+            st.session_state.current_result_hash == pdf_hash and 
+            st.session_state.current_result_mode == mode):
+            render_output(st.session_state.current_result)
 
-            # Display previous result if same file and mode (fixes disappearing results)
-            if (st.session_state.current_result is not None and 
-                st.session_state.current_result_hash == pdf_hash and 
-                st.session_state.current_result_mode == mode):
-                render_output(st.session_state.current_result)
+        if st.button("🚀 Extract Decisions", type="primary"):
+            if not api_key:
+                st.error("⚠️ Please enter OpenAI API key")
+            else:
+                client = OpenAI(api_key=api_key)
 
-            if st.button("🚀 Extract Decisions", type="primary"):
-                if not api_key:
-                    st.error("⚠️ Please enter OpenAI API key")
-                else:
-                    client = OpenAI(api_key=api_key)
+                with st.spinner("Extracting text from PDF..."):
+                    pages = get_page_texts_from_pdf(uploaded_file)
 
-                    with st.spinner("Extracting text from PDF..."):
-                        pages = get_page_texts_from_pdf(uploaded_file)
+                if not pages:
+                    st.warning("No text found with standard extraction - trying OCR...")
+                    with st.spinner("Running OCR (this may take a while)..."):
+                        pages = get_page_texts_from_ocr(uploaded_file)
 
-                    if not pages:
-                        st.warning("No text found with standard extraction - trying OCR...")
-                        with st.spinner("Running OCR (this may take a while)..."):
-                            pages = get_page_texts_from_ocr(uploaded_file)
+                if not pages:
+                    st.error("❌ Could not extract any text from this PDF")
+                    st.stop()
 
-                    if not pages:
-                        st.error("❌ Could not extract any text from this PDF")
-                        st.stop()
+                total_chars = sum(len(p["text"]) for p in pages)
+                total_words = sum(len(p["text"].split()) for p in pages)
+                st.success(f"✅ Extracted {total_chars} chars, {total_words} words from {len(pages)} pages")
 
-                    total_chars = sum(len(p["text"]) for p in pages)
-                    total_words = sum(len(p["text"].split()) for p in pages)
-                    st.success(f"✅ Extracted {total_chars} chars, {total_words} words from {len(pages)} pages")
+                chunks = chunk_page_texts(pages)
+                st.info(f"📦 Split into {len(chunks)} chunks for processing")
 
-                    chunks = chunk_page_texts(pages)
-                    st.info(f"📦 Split into {len(chunks)} chunks for processing")
+                with st.spinner(f"Processing in {mode} mode..."):
+                    result = process_document(chunks, client, mode, force_reprocess=reprocess)
 
-                    with st.spinner(f"Processing in {mode} mode..."):
-                        result = process_document(chunks, client, mode, force_reprocess=reprocess)
+                # --- INCREMENT COUNTER ONLY AFTER SUCCESSFUL PROCESSING ---
+                st.session_state.pdf_count += 1
 
-                    # Save current result so it survives reruns
-                    st.session_state.current_result = result
-                    st.session_state.current_result_hash = pdf_hash
-                    st.session_state.current_result_mode = mode
-                    st.session_state.current_result_filename = uploaded_file.name
+                # Save current result
+                st.session_state.current_result = result
+                st.session_state.current_result_hash = pdf_hash
+                st.session_state.current_result_mode = mode
+                st.session_state.current_result_filename = uploaded_file.name
 
-                    # Add to history with unique ID
-                    history_id = hashlib.md5(
-                        f"{uploaded_file.name}_{mode}_{time.time()}".encode()
-                    ).hexdigest()[:10]
+                # Add to history
+                history_id = hashlib.md5(
+                    f"{uploaded_file.name}_{mode}_{time.time()}".encode()
+                ).hexdigest()[:10]
 
-                    st.session_state.history.append({
-                        "id": history_id,
-                        "filename": uploaded_file.name,
-                        "mode": mode,
-                        "result": result,
-                        "time": time.strftime("%Y-%m-%d %H:%M")
-                    })
+                st.session_state.history.append({
+                    "id": history_id,
+                    "filename": uploaded_file.name,
+                    "mode": mode,
+                    "result": result,
+                    "time": time.strftime("%Y-%m-%d %H:%M")
+                })
 
-                    # Keep only last 20 history items
-                    if len(st.session_state.history) > 20:
-                        st.session_state.history = st.session_state.history[-20:]
+                # Keep only last 20 history items
+                if len(st.session_state.history) > 20:
+                    st.session_state.history = st.session_state.history[-20:]
 
-                    # Display results
-                    render_output(result)
-                    
-                    # Celebration
-                    st.balloons()
-                    
-                    st.success(f"✅ Extraction complete in {mode} mode!")
+                # Display results
+                render_output(result)
+                
+                # Celebration
+                st.balloons()
+                
+                st.success(f"✅ Extraction complete in {mode} mode! You've used {st.session_state.pdf_count}/{MAX_FREE_PDFS} free PDFs.")
 
     with tab2:
         st.markdown("### 🖼️ JPG → PDF Converter")
