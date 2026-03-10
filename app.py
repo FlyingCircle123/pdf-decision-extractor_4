@@ -717,12 +717,38 @@ def render_output(result):
             key=f"csv_{base_key}"
         )
 
-# =========================
+# ==# =========================
 # MAIN APP
 # =========================
 def main():
     st.title("🦆 WHITE CROW — PDF Tool")
-    st.markdown("Extract decisions, actions, and insights from any PDF. With weird modes.")
+    
+    st.markdown("""
+    Extract decisions, actions, and insights from any PDF.  
+    With weird modes, because normal is boring.
+
+    **Best for:**
+    - meeting notes
+    - study materials
+    - reports & research papers
+    - long PDFs where you just want the important parts
+    """)
+    
+    # Custom CSS for file uploader
+    st.markdown("""
+    <style>
+    [data-testid='stFileDropzoneInstructions']::after {
+        content: "📄 Max 50MB per file" !important;
+        display: block;
+        margin-top: 8px;
+        font-size: 0.9rem;
+        color: #888;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Rest of your app logic here...
+    # (include your tabs, file uploader, limit check, etc.)
     st.html("""
 <style>
 [data-testid='stFileDropzoneInstructions']::after {
@@ -773,7 +799,7 @@ def main():
         st.markdown("---")
         st.markdown("### ☕ Support WHITE CROW")
         st.markdown("""
-Built in 3 days for $0.98 because I was tired of paywalls.
+Built in 3 days for $3.69 because I was tired of paywalls.
 
 **9 weird modes** because normal is boring.
 
