@@ -779,8 +779,7 @@ Built in 3 days for $0.98 because I was tired of paywalls.
 
 Free for **5 PDFs** — after that, consider supporting:
 
-[👉 **Buy me a coffee on Ko-fi**](Ko-fi.com/
-flyingcircle)
+[👉 **Buy me a coffee on Ko-fi**](https://ko-fi.com/flyingcircle)
 
 *Every coffee keeps the crows flying! 🦆*
 """)
