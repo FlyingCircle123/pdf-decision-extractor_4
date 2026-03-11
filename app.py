@@ -887,21 +887,23 @@ Free for **5 PDFs** — after that, consider supporting:
         usage = load_usage()
         ip = get_user_ip()
         user_count = usage.get(ip, 0)
-    if user_count >= FREE_LIMIT:
-    	st.error("🚫 Free limit reached (5 PDF	00ps). Come back tomorrow.")
-    	st.stop()
-    if st.session_state.pdf_count >= MAX_FREE_PDFS:
+        
+        if user_count >= FREE_LIMIT:
+            st.error("🚫 Free limit reached (5 PDFs). Come back tomorrow.")
+            st.stop()
+        
+        if st.session_state.pdf_count >= MAX_FREE_PDFS:
             st.warning("⚠️ Free limit reached. Support on Ko-fi to continue: https://ko-fi.com/flyingcircle")
             st.stop()
         
         # Check file size immediately
-    uploaded_file.seek(0, 2)
-    file_size = uploaded_file.tell()
-    uploaded_file.seek(0)
+        uploaded_file.seek(0, 2)
+        file_size = uploaded_file.tell()
+        uploaded_file.seek(0)
         
-    if file_size > MAX_FILE_SIZE_MB * 1024 * 1024:
-        st.error(f"❌ File too large! Max {MAX_FILE_SIZE_MB}MB")
-        st.stop()
+        if file_size > MAX_FILE_SIZE_MB * 1024 * 1024:
+            st.error(f"❌ File too large! Max {MAX_FILE_SIZE_MB}MB")
+            st.stop()
         
         if not validate_pdf(uploaded_file):
             st.stop()
@@ -959,7 +961,10 @@ Free for **5 PDFs** — after that, consider supporting:
 
                 # --- INCREMENT COUNTER ONLY AFTER SUCCESSFUL PROCESSING ---
                 st.session_state.pdf_count += 1
-                increment_usage()
+                
+                # Update usage
+                usage[ip] = user_count + 1
+                save_usage(usage)
 
                 # Save current result
                 st.session_state.current_result = result
@@ -987,15 +992,10 @@ Free for **5 PDFs** — after that, consider supporting:
                 # Display results
                 render_output(result)
                 
-                # Celebration
+                # Celebrate
                 st.balloons()
                 
                 st.success(f"✅ Extraction complete in {mode} mode! You've used {st.session_state.pdf_count}/{MAX_FREE_PDFS} free PDFs.")
-                usage[ip] = user_count + 1
-                save_usage(usage)
-                if check_usage() >= MAX_FREE_PDFS:
-                	st.error("🚫 Free limit reached (5 PDFs). Come back tomorrow.")
-                	st.stop()
 
     with tab2:
         st.markdown("### 🖼️ JPG → PDF Converter")
