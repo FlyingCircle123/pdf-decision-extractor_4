@@ -138,6 +138,8 @@ if "current_result_mode" not in st.session_state:
     st.session_state.current_result_mode = None
 if "current_result_filename" not in st.session_state:
     st.session_state.current_result_filename = None
+if "pdf_count" not in st.session_state:
+    st.session_state.pdf_count = 0
 
 # =========================
 # TEMP FILE CLEANUP (for TTS)
